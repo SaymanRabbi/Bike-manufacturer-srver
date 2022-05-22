@@ -15,6 +15,7 @@ async function run() {
     try {
         await client.connect()
         const CollectionManufacturer = client.db('Manufacturer').collection('tools')
+        const CollectionUsers = client.db('Users').collection('data')
         app.get('/tools', async (req, res) => {
             const query = {}
             const result = await CollectionManufacturer.find(query).toArray()
@@ -27,6 +28,12 @@ async function run() {
         const result = await CollectionManufacturer.findOne(filter)
         res.send(result)
       })
+      //user data store
+      app.post('/product', async (req, res) => {
+        const data = req.body.product
+        const result = await CollectionUsers.insertOne(data)
+        res.send({success:result})
+     })
       app.put('/product/:id', async (req, res) => {
         const id = req.params.id;
         const filter = { _id: ObjectId(id)};
@@ -38,7 +45,7 @@ async function run() {
           },
         };
         const result = await CollectionManufacturer.updateOne(filter, updateDoc, options);
-        res.send(result)
+        res.send({success:result})
 
       })
         
