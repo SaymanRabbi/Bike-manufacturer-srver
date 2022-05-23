@@ -7,6 +7,7 @@ app.use(cors());
 app.use(express.json());
 require('dotenv').config()
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const stripe = require("stripe")(process.env.PAYMENT_KEY);
 //jwt middleware
 function verifyidentity(req,res,next) {
   const authHeader = req.headers.authorization;
@@ -30,14 +31,15 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 async function run() {
     try {
         await client.connect()
-        const CollectionManufacturer = client.db('Manufacturer').collection('tools')
-      const CollectionUsers = client.db('Users').collection('data')
-      const UserCollection = client.db('userData').collection('data')
-        app.get('/tools', verifyidentity,async (req, res) => {
-            const query = {}
+         const CollectionManufacturer = client.db('Manufacturer').collection('tools')
+         const CollectionUsers = client.db('Users').collection('data')
+         const UserCollection = client.db('userData').collection('data')
+         const PaymentCollection = client.db('payment').collection('data')
+        app.get('/tools',async (req, res) => {
+          const query = {}
           const result = await CollectionManufacturer.find(query).toArray()
           const updateresult = result.reverse()
-            res.send(updateresult)
+          res.send(updateresult)
         })
       //get product by id
       app.get('/product/:id',verifyidentity, async (req, res) => {
@@ -87,7 +89,49 @@ async function run() {
         const result = await UserCollection.updateOne(filter, updateDoc, options)
         res.send(result)
       })
-        
+      //singel user data
+      app.get('/userdata', verifyidentity,async (req, res) => {
+        const { useremail } = req.query
+        const query = { email: useremail }
+        const result = await CollectionUsers.find(query).toArray()
+        res.send(result)
+      })
+      //get payment information using by id
+      
+      app.get('/payment/:id',verifyidentity, async (req, res) => {
+        const id = req.params.id;
+        const filter = { _id: ObjectId(id) }
+        const result = await CollectionUsers.findOne(filter)
+        res.send(result)
+      })
+      //payment method
+      app.post("/create-payment-intent",verifyidentity ,async (req, res) => {
+        const { price } = req.body;
+        const amount = parseInt(price) *100
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: amount,
+          currency: "usd",
+          payment_method_types: [
+            "card"
+          ]
+        });
+        res.send({clientSecret: paymentIntent.client_secret});
+      });
+      app.patch('/payment/:id', verifyidentity, async (req, res) => {
+        const id = req.params.id
+        const payment = req.body
+        const filter = { _id: ObjectId(id) }
+        const updateDoc= {
+          $set: {
+            paid: true,
+            tnxId:payment.tnxId
+          }
+        }
+        const result = await CollectionUsers.updateOne(filter, updateDoc)
+        const paymentresult = await PaymentCollection.insertOne(payment)
+        res.send({messages:'success',updateDoc})
+      })
+     
     }
     finally {
         // await client.close()
