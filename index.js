@@ -31,16 +31,27 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 async function run() {
     try {
         await client.connect()
-         const CollectionManufacturer = client.db('Manufacturer').collection('tools')
-         const CollectionUsers = client.db('Users').collection('data')
-         const UserCollection = client.db('userData').collection('data')
-         const PaymentCollection = client.db('payment').collection('data')
+      const CollectionManufacturer = client.db('Manufacturer').collection('tools')
+      //order data
+      const CollectionUsers = client.db('Users').collection('data')
+      //userdata
+      const UserCollection = client.db('userData').collection('data')
+      //payment collection
+      const PaymentCollection = client.db('payment').collection('data')
+      //review collection
+      const ReviewCollection = client.db('ReviewCollection').collection('review')
         app.get('/tools',async (req, res) => {
           const query = {}
           const result = await CollectionManufacturer.find(query).toArray()
           const updateresult = result.reverse()
           res.send(updateresult)
         })
+      //review
+      app.get('/review', async (req, res) => {
+        const result = await ReviewCollection.find({}).toArray()
+        const reverse = result.reverse()
+        res.send(reverse)
+      })
       //get product by id
       app.get('/product/:id',verifyidentity, async (req, res) => {
         const id = req.params.id;
@@ -54,8 +65,8 @@ async function run() {
         const result = await CollectionUsers.insertOne(data)
         res.send({success:result})
      })
-      app.put('/product/:id', async (req, res) => {
-        const id = req.params.id;
+      app.put('/product', async (req, res) => {
+        const id = req.query.id;
         const filter = { _id: ObjectId(id)};
         const options = { upsert: true };
         const value = req.body.quantity
@@ -124,13 +135,20 @@ async function run() {
         const updateDoc= {
           $set: {
             paid: true,
-            tnxId:payment.tnxId
+            tnxId:payment.tnxid
           }
         }
         const result = await CollectionUsers.updateOne(filter, updateDoc)
         const paymentresult = await PaymentCollection.insertOne(payment)
         res.send({messages:'success',updateDoc})
       })
+      //unpaid order delated
+      app.delete('/delete/:id', async (req, res) => {
+        const id = req.params.id
+        const filter = { _id: ObjectId(id) }
+        const result = await CollectionUsers.deleteOne(filter)
+        res.send(result)
+    })
      
     }
     finally {
