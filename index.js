@@ -15,7 +15,7 @@ function verifyidentity(req,res,next) {
   }
   const authtoken = authHeader.split(' ')[1]
 
-   jwt.verify(authtoken,process.env.TOKEN_SECRET,function(err, decoded) {
+   jwt.verify(authtoken,process.env.ACCESS_TOKEN,function(err, decoded) {
        if (err) {
           return res.status(403).send({messages:"Forbiden"})
        }
@@ -31,22 +31,23 @@ async function run() {
     try {
         await client.connect()
         const CollectionManufacturer = client.db('Manufacturer').collection('tools')
-        const CollectionUsers = client.db('Users').collection('data')
-        app.get('/tools', async (req, res) => {
+      const CollectionUsers = client.db('Users').collection('data')
+      const UserCollection = client.db('userData').collection('data')
+        app.get('/tools', verifyidentity,async (req, res) => {
             const query = {}
           const result = await CollectionManufacturer.find(query).toArray()
           const updateresult = result.reverse()
             res.send(updateresult)
         })
       //get product by id
-      app.get('/product/:id', async (req, res) => {
+      app.get('/product/:id',verifyidentity, async (req, res) => {
         const id = req.params.id;
         const filter = { _id: ObjectId(id) }
         const result = await CollectionManufacturer.findOne(filter)
         res.send(result)
       })
       //user data store
-      app.post('/product', async (req, res) => {
+      app.post('/product',verifyidentity, async (req, res) => {
         const data = req.body.product
         const result = await CollectionUsers.insertOne(data)
         res.send({success:result})
@@ -72,7 +73,20 @@ async function run() {
             expiresIn:'1d'
         })
         res.send({createToken})
-    })
+      })
+      app.put('/users',async (req, res) => {
+        const email = req.query.email
+        console.log(email)
+        const user = req.body;
+        const filter = { email: email }
+        const options = { upsert: true };
+        const updateDoc = {
+          $set: user,
+          
+        }
+        const result = await UserCollection.updateOne(filter, updateDoc, options)
+        res.send(result)
+      })
         
     }
     finally {
