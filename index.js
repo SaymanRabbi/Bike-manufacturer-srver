@@ -2,13 +2,29 @@ const express = require('express')
 const app = express()
 const port = process.env.PORT || 5000
 const cors = require('cors');
-
+const jwt = require('jsonwebtoken');
 app.use(cors());
 app.use(express.json());
 require('dotenv').config()
-//connect to database
-
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+//jwt middleware
+function verifyidentity(req,res,next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+     return res.status(401).send({messages:"Unauthorized access"})
+  }
+  const authtoken = authHeader.split(' ')[1]
+
+   jwt.verify(authtoken,process.env.TOKEN_SECRET,function(err, decoded) {
+       if (err) {
+          return res.status(403).send({messages:"Forbiden"})
+       }
+       req.decoded = decoded;
+       next()
+    })
+  
+}
+//connect to database
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.jqavd.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 async function run() {
@@ -18,8 +34,9 @@ async function run() {
         const CollectionUsers = client.db('Users').collection('data')
         app.get('/tools', async (req, res) => {
             const query = {}
-            const result = await CollectionManufacturer.find(query).toArray()
-            res.send(result)
+          const result = await CollectionManufacturer.find(query).toArray()
+          const updateresult = result.reverse()
+            res.send(updateresult)
         })
       //get product by id
       app.get('/product/:id', async (req, res) => {
@@ -48,6 +65,14 @@ async function run() {
         res.send({success:result})
 
       })
+      //create jwt token
+      app.post('/token', async (req, res) => {
+        const userEmail = req.body;
+        const createToken = jwt.sign(userEmail, process.env.ACCESS_TOKEN, {
+            expiresIn:'1d'
+        })
+        res.send({createToken})
+    })
         
     }
     finally {
