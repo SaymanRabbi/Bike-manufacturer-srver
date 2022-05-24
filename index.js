@@ -40,6 +40,8 @@ async function run() {
       const PaymentCollection = client.db('payment').collection('data')
       //review collection
       const ReviewCollection = client.db('ReviewCollection').collection('review')
+      //profile information
+      const ProfileCollection = client.db('ProfileCollection').collection('profile')
         app.get('/tools',async (req, res) => {
           const query = {}
           const result = await CollectionManufacturer.find(query).toArray()
@@ -51,6 +53,12 @@ async function run() {
         const result = await ReviewCollection.find({}).toArray()
         const reverse = result.reverse()
         res.send(reverse)
+      })
+      //post review
+      app.post('/review', verifyidentity,async (req, res) => {
+        const data = req.body;
+        const result = await ReviewCollection.insertOne(data)
+        res.send(result)
       })
       //get product by id
       app.get('/product/:id',verifyidentity, async (req, res) => {
@@ -148,7 +156,27 @@ async function run() {
         const filter = { _id: ObjectId(id) }
         const result = await CollectionUsers.deleteOne(filter)
         res.send(result)
-    })
+      })
+      //profile collection
+      app.get('/profiledata', verifyidentity,async (req, res) => {
+         const { useremail } = req.query
+        const query = { email: useremail }
+        const result = await UserCollection.findOne(query)
+        res.send(result)
+      })
+      app.put('/profiledata/:id', async (req, res) => {
+        const id = req.params.id;
+        const filter = { _id: ObjectId(id) }
+        const data = req.body
+        console.log(data ,filter)
+        const options = { upsert: true };
+        const updateDoc = {
+          $set: data,
+          
+        }
+        const result = await UserCollection.updateOne(filter, updateDoc, options)
+        res.send(result)
+      })
      
     }
     finally {
