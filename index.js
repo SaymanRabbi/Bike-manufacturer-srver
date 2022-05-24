@@ -177,7 +177,51 @@ async function run() {
         const result = await UserCollection.updateOne(filter, updateDoc, options)
         res.send(result)
       })
-     
+      //is admin
+      app.get("/admin", verifyidentity, async (req, res) => {
+        const email = req.query.email;
+        const user = await UserCollection.findOne({ email: email });
+        const isAdmin = user?.role === "admin";
+        res.send({admin:isAdmin});
+      });
+      //get all user
+      app.get('/getalluser', verifyidentity, async (req, res) => {
+        const result = await UserCollection.find({}).toArray()
+        res.send(result)
+      })
+      //make admin
+      app.put("/email/admin", verifyidentity, async (req, res) => {
+        const email = req.query.email;
+        const filter = { email: email };
+        const updateDoc = {
+          $set: { role: "admin" },
+        };
+        const result = await UserCollection.updateOne(filter, updateDoc);
+        res.send(result);
+      });
+      //get all order data
+      app.get('/orderdata', verifyidentity, async (req, res) => {
+        const result = await CollectionUsers.find({}).toArray()
+        res.send(result)
+      })
+     //manege product
+      app.get('/manageproduct', verifyidentity, async (req, res) => {
+        const result = await CollectionManufacturer.find({}).toArray()
+        res.send(result)
+      })
+      //add Product
+      app.post('/addproduct', verifyidentity, async (req, res) => {
+        const data = req.body;
+        const result = await CollectionManufacturer.insertOne(data)
+        res.send(result)
+      })
+      //delete product
+      app.delete('/deletepd/:id', async (req, res) => {
+        const id = req.params.id
+        const filter = { _id: ObjectId(id) }
+        const result = await CollectionManufacturer.deleteOne(filter)
+        res.send(result)
+      })
     }
     finally {
         // await client.close()
