@@ -102,8 +102,8 @@ async function run() {
       })
       //create jwt token
       app.post('/token', async (req, res) => {
-        const userEmail = req.body;
-        const createToken = jwt.sign(userEmail, process.env.ACCESS_TOKEN, {
+        const email = req.query.email;
+        const createToken = jwt.sign({ email }, process.env.ACCESS_TOKEN, {
             expiresIn:'1d'
         })
         res.send({createToken})
