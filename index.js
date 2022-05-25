@@ -42,6 +42,19 @@ async function run() {
       const ReviewCollection = client.db('ReviewCollection').collection('review')
       //profile information
       const ProfileCollection = client.db('ProfileCollection').collection('profile')
+
+      //VeryFy User Are Admin Or Not
+    const verifyAdmin = async (req, res, next) => {
+      const requester = req?.decoded.email;
+      const requesterAccount = await UserCollection.findOne({
+        email: requester,
+      });
+      if (requesterAccount.role === "admin") {
+        next();
+      } else {
+        res.status(403).send({ messages: "Forbiden Access" });
+      }
+    };
         app.get('/tools',async (req, res) => {
           const query = {}
           const result = await CollectionManufacturer.find(query).toArray()
@@ -175,7 +188,7 @@ async function run() {
         res.send(result)
       })
       //is admin
-      app.get("/admin", verifyidentity, async (req, res) => {
+      app.get("/admin", verifyidentity,verifyAdmin, async (req, res) => {
         const email = req.query.email;
         const user = await UserCollection.findOne({ email: email });
         const isAdmin = user?.role === "admin";
@@ -187,7 +200,7 @@ async function run() {
         res.send(result)
       })
       //make admin
-      app.put("/email/admin", verifyidentity, async (req, res) => {
+      app.put("/email/admin", verifyidentity,verifyAdmin, async (req, res) => {
         const email = req.query.email;
         const filter = { email: email };
         const updateDoc = {
@@ -197,17 +210,17 @@ async function run() {
         res.send(result);
       });
       //get all order data
-      app.get('/orderdata', verifyidentity, async (req, res) => {
+      app.get('/orderdata', verifyidentity, verifyAdmin,async (req, res) => {
         const result = await CollectionUsers.find({}).toArray()
         res.send(result)
       })
      //manege product
-      app.get('/manageproduct', verifyidentity, async (req, res) => {
+      app.get('/manageproduct', verifyidentity, verifyAdmin,async (req, res) => {
         const result = await CollectionManufacturer.find({}).toArray()
         res.send(result)
       })
       //add Product
-      app.post('/addproduct', verifyidentity, async (req, res) => {
+      app.post('/addproduct', verifyidentity,verifyAdmin, async (req, res) => {
         const data = req.body;
         const result = await CollectionManufacturer.insertOne(data)
         res.send(result)
