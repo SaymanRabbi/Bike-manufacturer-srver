@@ -168,11 +168,9 @@ async function run() {
         const id = req.params.id;
         const filter = { _id: ObjectId(id) }
         const data = req.body
-        console.log(data ,filter)
         const options = { upsert: true };
         const updateDoc = {
           $set: data,
-          
         }
         const result = await UserCollection.updateOne(filter, updateDoc, options)
         res.send(result)
@@ -221,6 +219,18 @@ async function run() {
         const filter = { _id: ObjectId(id) }
         const result = await CollectionManufacturer.deleteOne(filter)
         res.send(result)
+      })
+      //shipped Product
+      app.patch('/shipped/:id', async (req, res) => {
+        const id = req.params.id
+        const filter = { _id: ObjectId(id) }
+        const updateDoc= {
+          $set: {
+            shipped: true,
+          }
+        }
+        const result = await CollectionUsers.updateOne(filter, updateDoc)
+        res.send({messages:'success',updateDoc})
       })
     }
     finally {
