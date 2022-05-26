@@ -42,6 +42,8 @@ async function run() {
       const ReviewCollection = client.db('ReviewCollection').collection('review')
       //profile information
       const ProfileCollection = client.db('ProfileCollection').collection('profile')
+      //Blog Collection
+      const BlogCollection = client.db('BlogCollection').collection('blog')
 
       //VeryFy User Are Admin Or Not
     const verifyAdmin = async (req, res, next) => {
@@ -245,6 +247,18 @@ async function run() {
         }
         const result = await CollectionUsers.updateOne(filter, updateDoc)
         res.send({messages:'success',updateDoc})
+      })
+      //collecet Blog
+      app.get('/blog', async (req, res) => {
+        const result = await BlogCollection.find({}).toArray()
+        res.send(result);
+      })
+      //get data by id
+      app.get('/blog/:id', async (req, res) => {
+        const id = req.params.id;
+        const filter = { _id: ObjectId(id) }
+        const result = await BlogCollection.findOne(filter)
+        res.send(result)
       })
     }
     finally {
